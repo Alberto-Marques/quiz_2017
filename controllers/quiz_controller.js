@@ -222,3 +222,85 @@ exports.check = function (req, res, next) {
         answer: answer
     });
 };
+
+
+// FUNCTION shuffle
+// Función para mezclar un array obtenida de código público mediante el algoritmo de FisherYates
+
+function shuffle(array) {
+  var currentIndex = array.length, temporaryValue, randomIndex;
+
+  while (0 !== currentIndex) {
+
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex -= 1;
+    temporaryValue = array[currentIndex];
+    array[currentIndex] = array[randomIndex];
+    array[randomIndex] = temporaryValue;
+  }
+
+  return array;
+}
+
+
+// GET /quizzes/randomplay
+
+exports.randomplay = function (req, res ,next) {
+    var nextQuiz = null;
+    if (req.session.score == undefined || req.session.score == 0) {
+ 
+        nextQuiz = models.Quiz.findAll().then(function(quizzes) {
+            shuffle(quizzes) //mezclamos los quizzes
+            var quizzesIds = quizzes.map(function(quiz) {
+                return quiz.id;
+            } )
+            req.session.shuffledId = quizzesIds;
+            req.session.questionIndex = 0;
+            req.session.score = 0;
+            var firstQuestion = quizzes[ req.session.questionIndex];
+            return firstQuestion;
+        })
+    } else if (++req.session.questionIndex < req.session.shuffledId.length) { // Número de pregunta menor al total
+        var newQuestion = req.session.shuffledId[req.session.questionIndex];
+        nextQuiz = models.Quiz.findById(newQuestion)
+    } else { // Se han acabado las preguntas
+        var score = req.session.score;
+        req.session.score = undefined;
+        res.render('quizzes/random_nomore',{
+            score: score,
+        })
+        return;
+    }
+
+    nextQuiz.then(function (question) {
+        res.render('quizzes/random_play',{
+            quiz: question,
+            score: req.session.score,
+        })
+    })
+    .catch(function(error) {
+	req.flash('error', 'Error al cargar: ' + error.message);
+        next(error);
+    })
+
+}
+
+// GET /quizzes/randomcheck/:quizId
+
+exports.randomcheck = function (req, res, next){
+    var answer = req.query.answer || "";
+    var result = answer.toLowerCase().trim() == req.quiz.answer.toLowerCase().trim();
+    var score = req.session.score
+    if (!result) {
+        req.session.score = 0;
+    } else {
+        req.session.score++;
+        score = req.session.score;
+    }
+
+    res.render('quizzes/random_result',{
+        score: score,
+        answer: answer,
+        result: result,
+    })
+}
