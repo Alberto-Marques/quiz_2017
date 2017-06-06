@@ -96,3 +96,22 @@ exports.destroy = function (req, res, next) {
         next(error);
     });
 };
+
+
+
+exports.admin_author = function (req, res, next) {
+
+	var isAdmin = req.session.user.isAdmin;
+	var quizAuthor = req.quiz.AuthorId === req.session.user.id;
+   	var tipAuthor = req.tip.AuthorId === req.session.user.id;
+
+
+	if (isAdmin || quizAuthor || tipAuthor){
+		next();
+	}
+	else{
+		console.log('No tiene los permisos de autor o administrador');
+        	res.send(403);
+   	}
+}
+

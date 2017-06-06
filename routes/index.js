@@ -128,6 +128,7 @@ router.put('/quizzes/:quizId(\\d+)/tips/:tipId(\\d+)/accept',
     quizController.adminOrAuthorRequired,
     tipController.accept);
 router.delete('/quizzes/:quizId(\\d+)/tips/:tipId(\\d+)',
+    tipController.admin_author,
     sessionController.loginRequired,
     tipController.destroy);
 
